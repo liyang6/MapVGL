@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>MapVGL</title>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge">
-    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="initial-scale=2.0, user-scalable=no">
     <style>
     html,
     body {
@@ -22,6 +22,7 @@
     <script src="//api.map.baidu.com/api?v=1.0&type=webgl&ak=1XjLLEhZhQNUzd93EjU5nOGQ"></script>
     <script src="//mapv.baidu.com/build/mapv.min.js"></script>
     <script src="static/common.js"></script>
+    <script src="static/data.js"></script>
     <script src="static/mapvgl.min.js"></script>
     <script src="static/mapvgl.threelayers.min.js"></script>
 </head>
@@ -38,27 +39,48 @@
 
     /* global purpleStyle */
 
+    /* global citys */
     var map = initMap({
         tilt: 41.8,
         heading: 0,
         center: [105.552849,28.847593],
-        zoom: 5,
+        zoom: 7,
         style: snowStyle
     });
 
-    var citys = [
-        '北京', '天津', '上海', '重庆', '石家庄', '太原', '呼和浩特',
-        '哈尔滨', '长春', '沈阳', '济南', '南京', '合肥', '杭州', '南昌', '福州',
-        '郑州', '武汉', '长沙', '广州', '南宁', '西安', '银川', '兰州', '西宁',
-        '乌鲁木齐', '成都', '贵阳', '昆明', '拉萨', '海口'
-    ];
+    
 
     var randomCount = 350; // 模拟的飞线的数量
 
     var curve = new mapvgl.BezierCurve();
+     // 构造数据
+     var values = citys.map(item=>item.count)
+    // var min =Math.min(...values);
+    var max =Math.max(...values);
 
-    var data = [];
+    var data = citys.map(item=>{
+        const { from,to,count }=item||{}
+        var startPoint = mapv.utilCityCenter.getCenterByCityName(from);
+        var endPoint = mapv.utilCityCenter.getCenterByCityName(to);
+        var startPoint = map.lnglatToMercator(startPoint.lng, startPoint.lat);
+        var endPoint = map.lnglatToMercator(endPoint.lng, endPoint.lat);
+        curve.setOptions({
+            start: [startPoint[0], startPoint[1]],
+            end: [endPoint[0], endPoint[1]]
+        });
+        return {
+            geometry: {
+                type: 'LineString',
+                coordinates: curve.getPoints(60)
+            },
+            properties: {
+                count: Math.random()
+            },
+            width:2+(count/max).toFixed(1)*10
+        }
+    })
 
+/* 
     // 构造数据
     while (randomCount--) {
         var startPoint = mapv.utilCityCenter.getCenterByCityName(citys[parseInt(Math.random() * citys.length, 10)]);
@@ -82,7 +104,7 @@
                 count: Math.random()
             }
         });
-    }
+    } */
 
     var view = new mapvgl.View({
         // postProcessing: new mapvgl.PostProcessing({
@@ -114,7 +136,6 @@
             item[2] += 3;
             return item;
         });
-      item.width=1+Math.random()*3
         return item;
     }));
 
